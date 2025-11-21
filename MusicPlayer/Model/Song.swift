@@ -15,3 +15,18 @@ struct Song: Identifiable {
     var coverImage: Data?
     var duration: TimeInterval?
 }
+
+/*
+ Title
+ Artist
+ Album
+ Year
+ Genre
+ Composer
+ 
+ 
+ Publisher
+ Track Number
+ Comment
+ Encoded By
+ */

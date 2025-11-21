@@ -17,7 +17,7 @@ struct PlayerView: View {
             
             List {
                 ForEach(viewModel.songs) { song in
-                    SongRow(song: song)
+                    SongRow(song: song, durationFormatted: viewModel.durationFormatted)
                 }
             }
             .listStyle(.plain)
