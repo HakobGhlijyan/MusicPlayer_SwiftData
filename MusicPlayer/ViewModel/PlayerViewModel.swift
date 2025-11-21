@@ -9,8 +9,5 @@ import SwiftUI
 import Combine
 
 final class PlayerViewModel: ObservableObject {
-    @Published var songs: [Song] = [
-        Song(name: "Natural", data: Data(), artist: "Imagine Dragon", coverImage: Data(), duration: 0)
-    ]
-
+    @Published var songs: [Song] = []
 }
