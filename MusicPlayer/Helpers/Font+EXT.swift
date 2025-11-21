@@ -11,13 +11,15 @@ struct FontView: View {
     var body: some View {
         ZStack {
             BackgroundView()
-            VStack {
+            VStack(spacing: 10) {
                 Text("Name Font")
                     .nameFont()
                 Text("Artist Font")
                     .artistFont()
-                Text("Song Time - 03:45")
+                Text("Song Time 03:45 ")
                     .songTimeFont()
+                Text("Song Timer for player - 00:00 - 03:45")
+                    .durationFont()
             }
         }
     }
@@ -30,17 +32,31 @@ struct FontView: View {
 
 extension Text {
     func nameFont() -> some View {
-        self.foregroundStyle(.appTextPrimary)
+        self.foregroundStyle(.white)
             .font(.system(size: 16, weight: .semibold, design: .rounded))
     }
     
     func artistFont() -> some View {
-        self.foregroundStyle(.appTextSecondary)
+        self.foregroundStyle(.white)
             .font(.system(size: 14, weight: .light, design: .rounded))
     }
     
     func songTimeFont() -> some View {
-        self.foregroundStyle(.appTextSecondary)
+        self.foregroundStyle(.white)
             .font(.system(size: 12, weight: .medium, design: .rounded))
+    }
+}
+
+struct DurationViewModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .foregroundStyle(.white)
+            .font(.system(size: 14, weight: .light, design: .rounded))
+    }
+}
+
+extension View {
+    func durationFont() -> some View {
+        self.modifier(DurationViewModifier())
     }
 }
