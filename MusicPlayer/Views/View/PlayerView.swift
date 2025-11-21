@@ -8,40 +8,35 @@
 import SwiftUI
 
 struct PlayerView: View {
+    @StateObject private var viewModel = PlayerViewModel()
+    
     var body: some View {
         ZStack {
             BackgroundView()
             
             List {
-                SongRow()
+                ForEach(viewModel.songs) { song in
+                    SongRow(song: song)
+                }
             }
             .listStyle(.plain)
         }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.title2)
+                        .foregroundStyle(.white)
+                }
+            }
+        }
+        .navigationTitle("Music Player")
+        .embedNavigation()
     }
 }
-
+ 
 #Preview {
     PlayerView()
-}
-
-struct SongRow: View {
-//    let song: Song
-
-    var body: some View {
-        HStack {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .frame(width: 60, height: 60)
-            VStack(alignment: .leading) {
-                
-                Text("Hunt").nameFont()
-                Text("Jonny Cash").artistFont()
-            }
-            
-            Spacer()
-            
-            Text("03:48").songTimeFont()
-        }
-        .listRowBackground(Color.clear)
-        .listRowSeparator(.hidden)
-    }
 }
