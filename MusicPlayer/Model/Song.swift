@@ -8,10 +8,10 @@
 import Foundation
 
 struct Song: Identifiable {
-    let id = UUID()
-    let name: String
-    let data: Data
-    let artist: String?
-    let coverImage: Data?
-    let duration: TimeInterval?
+    var id = UUID()
+    var name: String
+    var data: Data
+    var artist: String?
+    var coverImage: Data?
+    var duration: TimeInterval?
 }

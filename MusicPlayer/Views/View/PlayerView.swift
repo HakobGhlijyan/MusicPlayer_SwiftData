@@ -9,6 +9,7 @@ import SwiftUI
 
 struct PlayerView: View {
     @StateObject private var viewModel = PlayerViewModel()
+    @State private var showFileManager: Bool = false
     
     var body: some View {
         ZStack {
@@ -24,13 +25,16 @@ struct PlayerView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    
+                    showFileManager.toggle()
                 } label: {
                     Image(systemName: "plus")
                         .font(.title2)
                         .foregroundStyle(.white)
                 }
             }
+        }
+        .sheet(isPresented: $showFileManager) {
+            ImportFileManager(songs: $viewModel.songs)
         }
         .navigationTitle("Music Player")
         .embedNavigation()
