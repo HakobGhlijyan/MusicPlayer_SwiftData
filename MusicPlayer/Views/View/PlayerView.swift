@@ -48,7 +48,14 @@ struct PlayerView: View {
         .sheet(isPresented: $showFileManager) {
             ImportFileManager(songs: $viewModel.songs)
         }
-        .navigationTitle("Music Player")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text("Music Player")
+                    .font(.title3).fontWeight(.semibold)
+                    .foregroundColor(.white)
+            }
+        }
         .embedNavigation()
     }
         
