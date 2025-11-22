@@ -20,96 +20,18 @@ struct PlayerView: View {
             
             VStack {
                 //Music List
-                List {
-                    ForEach(viewModel.songs) { song in
-                        SongRow(song: song, durationFormatted: viewModel.durationFormatted)
-                            .onTapGesture {
-                                viewModel.playAudio(song: song)
+                MusicListView()
+                //PLAYER
+                if viewModel.currentSong != nil {
+                    MusicPlayerView()
+                        .frame(height: showFullPlayer ? SizeConstants.fullPlayerSize : SizeConstants.miniPlayerSize)
+                        .onTapGesture {
+                            withAnimation(.spring) {
+                                showFullPlayer.toggle()
                             }
-                    }
+                        }
+                        .padding(.bottom)
                 }
-                .listStyle(.plain)
-                
-                VStack {
-                    //Mini Player
-                    HStack {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .foregroundStyle(.gray)
-                            Image(systemName: "music.note")
-                                .foregroundStyle(.white)
-                                .font(.system(size: 20))
-                        }
-                        .frame(width: frameImage, height: frameImage)
-
-                        if !showFullPlayer {
-                            VStack(alignment: .leading) {
-                                Text("song.name").nameFont()
-                                Text("song.artist").artistFont()
-                            }
-                            .compositingGroup()
-                            .matchedGeometryEffect(id: "info", in: playerAnimation)
-
-                            Spacer()
-                            
-                            CustomButton(image: "play.circle.fill", size: .largeTitle) {
-                                
-                            }
-                            .matchedGeometryEffect(id: "playButton", in: playerAnimation)
-                        }
-                    }
-                    .padding()
-                    .background(
-                        showFullPlayer ? Color.clear : Color.primary.opacity(0.3),
-                        in: .rect(cornerRadius: 12, style: .continuous)
-                    )
-                    .padding()
-                    
-                    //Full Player
-                    if showFullPlayer {
-                        VStack {
-                            Text("song.name").nameFont()
-                            Text("song.artist").artistFont()
-                        }
-                        .compositingGroup()
-                        .matchedGeometryEffect(id: "info", in: playerAnimation)
-                        .padding(.top)
-                        
-                        VStack {
-                            HStack {
-                                Text("00:00")
-                                Spacer()
-                                Text("03:23")
-                            }
-                            .durationFont()
-                            .padding()
-                            
-                            HStack(spacing: 40) {
-                                CustomButton(image: "backward.end.fill", size: .title3) {
-                                    
-                                }
-                                CustomButton(image: "play.circle.fill", size: .largeTitle) {
-                                    
-                                }
-                                .matchedGeometryEffect(id: "playButton", in: playerAnimation)
-                                
-                                CustomButton(image: "forward.end.fill", size: .title3) {
-                                    
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .foregroundStyle(.white)
-                        }
-                        .padding(.horizontal, 40)
-                    }
-                }
-                .frame(height: showFullPlayer ? SizeConstants.fullPlayerSize : SizeConstants.miniPlayerSize)
-                .onTapGesture {
-                    withAnimation(.spring) {
-                        showFullPlayer.toggle()
-                    }
-                }
-                .padding(.bottom)
             }
         }
         .toolbar {
@@ -129,6 +51,105 @@ struct PlayerView: View {
         .navigationTitle("Music Player")
         .embedNavigation()
     }
+        
+    @ViewBuilder private func MusicPlayerView() -> some View {
+        VStack {
+            MusicPlayerMiniView()
+            MusicPlayerFullView()
+        }
+    }
+    
+    @ViewBuilder private func MusicListView() -> some View {
+        List {
+            ForEach(viewModel.songs) { song in
+                SongRow(song: song, durationFormatted: viewModel.durationFormatted)
+                    .onTapGesture {
+                        viewModel.playAudio(song: song)
+                    }
+            }
+        }
+        .listStyle(.plain)
+    }
+    
+    @ViewBuilder private func MusicPlayerMiniView() -> some View {
+        //Mini Player
+        HStack {
+            Group {
+                if let data = viewModel.currentSong?.coverImage, let uiImage = UIImage(data: data) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .clipShape(.rect(cornerRadius: 10, style: .continuous))
+                } else {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .foregroundStyle(.gray)
+                        Image(systemName: "music.note")
+                            .foregroundStyle(.white)
+                            .font(.system(size: 30))
+                    }
+                }
+            }
+            .frame(width: frameImage, height: frameImage)
+            
+            if !showFullPlayer {
+                SongDescription(.leading)
+                    .matchedGeometryEffect(id: "info", in: playerAnimation)
+                
+                Spacer()
+                
+                CustomButton(image: viewModel.isPlaying ? "pause.circle.fill" : "play.circle.fill", size: .largeTitle) {
+                    viewModel.playPause()
+                }
+                .matchedGeometryEffect(id: "playButton", in: playerAnimation)
+            }
+        }
+        .padding()
+        .background(
+            showFullPlayer ? Color.clear : Color.primary.opacity(0.3),
+            in: .rect(cornerRadius: 12, style: .continuous)
+        )
+        .padding()
+
+    }
+    
+    @ViewBuilder private func MusicPlayerFullView() -> some View {
+        Group {
+            //Full Player
+            if showFullPlayer {
+                SongDescription()
+                    .matchedGeometryEffect(id: "info", in: playerAnimation)
+                    .padding(.top)
+                
+                VStack {
+                    HStack {
+                        Text("00:00")
+                        Spacer()
+                        Text("03:23")
+                    }
+                    .durationFont()
+                    .padding()
+                    
+                    HStack(spacing: 40) {
+                        CustomButton(image: "backward.end.fill", size: .title3) {
+                            
+                        }
+                        CustomButton(image: viewModel.isPlaying ? "pause.circle.fill" : "play.circle.fill", size: .largeTitle) {
+                            viewModel.playPause()
+                        }
+                        .matchedGeometryEffect(id: "playButton", in: playerAnimation)
+
+                        CustomButton(image: "forward.end.fill", size: .title3) {
+                            
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.white)
+                }
+                .padding(.horizontal, 40)
+            }
+        }
+    }
     
     @ViewBuilder private func CustomButton(
         image: String,
@@ -142,6 +163,18 @@ struct PlayerView: View {
                 .font(size)
                 .foregroundStyle(.white)
         }
+    }
+    
+    @ViewBuilder private func SongDescription(_ alignment: HorizontalAlignment = .center) -> some View {
+        VStack(alignment: alignment) {
+            Text(viewModel.currentSong?.name ?? "unknown name")
+                .nameFont()
+                .frame(width: 230)
+                .lineLimit(1)
+            Text(viewModel.currentSong?.artist ?? "unknown artist")
+                .artistFont()
+        }
+        .compositingGroup()
     }
 }
  

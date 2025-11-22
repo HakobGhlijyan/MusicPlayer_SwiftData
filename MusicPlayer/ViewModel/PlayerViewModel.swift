@@ -13,15 +13,35 @@ final class PlayerViewModel: ObservableObject {
     @Published var songs: [Song] = []
     @Published var audioPlayer: AVAudioPlayer?
     @Published var isPlaying: Bool = false
+    @Published var currentIndex: Int?
+    
+    var currentSong: Song? {
+        guard let currentIndex = currentIndex, songs.indices.contains(currentIndex) else {
+            return nil
+        }
+        return songs[currentIndex]
+    }
 
     func playAudio(song: Song) {
         do {
             self.audioPlayer = try AVAudioPlayer(data: song.data)
             self.audioPlayer?.play()
             isPlaying = true
+            if let index = songs.firstIndex(where: { $0.id == song.id }) {
+                currentIndex = index
+            }
         } catch {
             print("Error \(#function) - \(error.localizedDescription)")
         }
+    }
+    
+    func playPause() {
+        if isPlaying {
+            self.audioPlayer?.pause()
+        } else {
+            self.audioPlayer?.play()
+        }
+        isPlaying.toggle()
     }
     
     //Converter

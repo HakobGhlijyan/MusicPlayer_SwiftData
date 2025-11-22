@@ -34,6 +34,7 @@ struct SongRow: View {
             VStack(alignment: .leading) {
                 
                 Text(song.name).nameFont()
+                    .lineLimit(1)
                 Text(song.artist ?? "Unknown Artist").artistFont()
             }
             
