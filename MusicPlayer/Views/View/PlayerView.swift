@@ -123,15 +123,25 @@ struct PlayerView: View {
                 
                 VStack {
                     HStack {
-                        Text("00:00")
+                        Text(viewModel.durationFormatted(duration: viewModel.currentTime))
                         Spacer()
-                        Text("03:23")
+                        Text(viewModel.durationFormatted(duration: viewModel.totalTime))
                     }
                     .durationFont()
                     .padding()
                     
+                    Slider(value: $viewModel.currentTime, in: 0...viewModel.totalTime) { editing in
+                        if !editing { viewModel.seekTime(time: viewModel.currentTime) }
+                    }
+                    .onAppear {
+                        Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
+                            viewModel.updateProgress()
+                        }
+                    }
+                    .padding(.top).tint(.white)
+                    
                     HStack(spacing: 40) {
-                        CustomButton(image: "backward.end.fill", size: .title3) {
+                        CustomButton(image: "backward.end.fill", size: .title) {
                             
                         }
                         CustomButton(image: viewModel.isPlaying ? "pause.circle.fill" : "play.circle.fill", size: .largeTitle) {
@@ -139,12 +149,13 @@ struct PlayerView: View {
                         }
                         .matchedGeometryEffect(id: "playButton", in: playerAnimation)
 
-                        CustomButton(image: "forward.end.fill", size: .title3) {
+                        CustomButton(image: "forward.end.fill", size: .title) {
                             
                         }
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.white)
+                    .padding(.top)
                 }
                 .padding(.horizontal, 40)
             }
@@ -169,11 +180,11 @@ struct PlayerView: View {
         VStack(alignment: alignment) {
             Text(viewModel.currentSong?.name ?? "unknown name")
                 .nameFont()
-                .frame(width: 230)
                 .lineLimit(1)
             Text(viewModel.currentSong?.artist ?? "unknown artist")
                 .artistFont()
         }
+        .frame(width: 230)
         .compositingGroup()
     }
 }
