@@ -35,7 +35,10 @@ struct PlayerView: View {
             }
         }
         .sheet(isPresented: $showFileManager) {
-            ImportFileManager(songs: $viewModel.songs)
+            // выбрать одну
+            ImportFileManager(songs: $viewModel.songs, singleSelection: true)
+            // выбрать много
+//            ImportFileManager(songs: $viewModel.songs, singleSelection: false)
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
