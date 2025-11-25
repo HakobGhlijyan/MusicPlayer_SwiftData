@@ -9,7 +9,7 @@ import SwiftUI
 import Combine
 import AVKit
 
-final class PlayerViewModel: ObservableObject {
+final class PlayerViewModel: NSObject, ObservableObject {
     @Published var songs: [Song] = []
     @Published var audioPlayer: AVAudioPlayer?
     @Published var isPlaying: Bool = false
@@ -24,10 +24,29 @@ final class PlayerViewModel: ObservableObject {
         }
         return songs[currentIndex]
     }
+    
+    //Converter
+    func durationFormatted(duration: TimeInterval) -> String {
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = [.minute, .second]
+        formatter.unitsStyle = .positional
+        formatter.zeroFormattingBehavior = .pad
+        return formatter.string(from: duration) ?? "0:00"
+    }
+}
 
+extension PlayerViewModel: AVAudioPlayerDelegate {
+    //Delegate FUNC
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        if flag { forward() }
+    }
+}
+
+extension PlayerViewModel {
     func playAudio(song: Song) {
         do {
             self.audioPlayer = try AVAudioPlayer(data: song.data)
+            self.audioPlayer?.delegate = self
             self.audioPlayer?.play()
             isPlaying = true
             totalTime = audioPlayer?.duration ?? 0.0
@@ -49,6 +68,24 @@ final class PlayerViewModel: ObservableObject {
         isPlaying.toggle()
     }
     
+    func stop() {
+        self.audioPlayer?.stop()
+        self.audioPlayer = nil
+        isPlaying = false
+    }
+    
+    func forward() {
+        guard let currentIndex = currentIndex else { return }
+        let nextIndex = (currentIndex + 1 < songs.count) ? currentIndex + 1 : 0
+        playAudio(song: songs[nextIndex])
+    }
+    
+    func backward() {
+        guard let currentIndex = currentIndex else { return }
+        let backIndex = currentIndex > 0 ? currentIndex - 1 : songs.count - 1
+        playAudio(song: songs[backIndex])
+    }
+    
     func seekTime(time: TimeInterval) {
         audioPlayer?.currentTime = time
     }
@@ -58,39 +95,10 @@ final class PlayerViewModel: ObservableObject {
         currentTime = audioPlayer.currentTime
     }
     
-    //Converter
-    func durationFormatted(duration: TimeInterval) -> String {
-        let formatter = DateComponentsFormatter()
-        formatter.allowedUnits = [.minute, .second]
-        formatter.unitsStyle = .positional
-        formatter.zeroFormattingBehavior = .pad
-        return formatter.string(from: duration) ?? "0:00"
-    }
-}
-
-//ALTERNATIVE
-//extension TimeInterval {
-//    var mmSS: String {
-//        let formatter = DateComponentsFormatter()
-//        formatter.allowedUnits = [.minute, .second]
-//        formatter.unitsStyle = .positional
-//        formatter.zeroFormattingBehavior = .pad
-//        return formatter.string(from: self) ?? "0:00"
-//    }
-//}
-//
-//Text(song.duration?.mmSS ?? "0:00").songTimeFont()
-
-extension TimeInterval {
-    static let mmssFormatter: DateComponentsFormatter = {
-        let f = DateComponentsFormatter()
-        f.allowedUnits = [.minute, .second]
-        f.unitsStyle = .positional
-        f.zeroFormattingBehavior = .pad
-        return f
-    }()
-    
-    var mmSS: String {
-        TimeInterval.mmssFormatter.string(from: self) ?? "0:00"
+    func delete(offsets: IndexSet) {
+        if let first = offsets.first {
+            stop()
+            songs.remove(at: first)
+        }
     }
 }

@@ -34,6 +34,10 @@ struct PlayerView: View {
                 }
             }
         }
+        .sheet(isPresented: $showFileManager) {
+            ImportFileManager(songs: $viewModel.songs)
+        }
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
@@ -44,12 +48,7 @@ struct PlayerView: View {
                         .foregroundStyle(.white)
                 }
             }
-        }
-        .sheet(isPresented: $showFileManager) {
-            ImportFileManager(songs: $viewModel.songs)
-        }
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
+
             ToolbarItem(placement: .principal) {
                 Text("Music Player")
                     .font(.title3).fontWeight(.semibold)
@@ -74,6 +73,7 @@ struct PlayerView: View {
                         viewModel.playAudio(song: song)
                     }
             }
+            .onDelete(perform: viewModel.delete)
         }
         .listStyle(.plain)
     }
@@ -81,27 +81,10 @@ struct PlayerView: View {
     @ViewBuilder private func MusicPlayerMiniView() -> some View {
         //Mini Player
         HStack {
-            Group {
-                if let data = viewModel.currentSong?.coverImage, let uiImage = UIImage(data: data) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFill()
-                        .clipShape(.rect(cornerRadius: 10, style: .continuous))
-                } else {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .foregroundStyle(.gray)
-                        Image(systemName: "music.note")
-                            .foregroundStyle(.white)
-                            .font(.system(size: 30))
-                    }
-                }
-            }
-            .frame(width: frameImage, height: frameImage)
-            
+            SongImageView(imageData: viewModel.currentSong?.coverImage, size: frameImage)
+    
             if !showFullPlayer {
                 SongDescription(.leading)
-                    .matchedGeometryEffect(id: "info", in: playerAnimation)
                 
                 Spacer()
                 
@@ -125,7 +108,6 @@ struct PlayerView: View {
             //Full Player
             if showFullPlayer {
                 SongDescription()
-                    .matchedGeometryEffect(id: "info", in: playerAnimation)
                     .padding(.top)
                 
                 VStack {
@@ -149,7 +131,7 @@ struct PlayerView: View {
                     
                     HStack(spacing: 40) {
                         CustomButton(image: "backward.end.fill", size: .title) {
-                            
+                            viewModel.backward()
                         }
                         CustomButton(image: viewModel.isPlaying ? "pause.circle.fill" : "play.circle.fill", size: .largeTitle) {
                             viewModel.playPause()
@@ -157,7 +139,7 @@ struct PlayerView: View {
                         .matchedGeometryEffect(id: "playButton", in: playerAnimation)
 
                         CustomButton(image: "forward.end.fill", size: .title) {
-                            
+                            viewModel.forward()
                         }
                     }
                     .buttonStyle(.plain)
@@ -188,8 +170,11 @@ struct PlayerView: View {
             Text(viewModel.currentSong?.name ?? "unknown name")
                 .nameFont()
                 .lineLimit(1)
+                .matchedGeometryEffect(id: "name", in: playerAnimation)
+                
             Text(viewModel.currentSong?.artist ?? "unknown artist")
                 .artistFont()
+                .matchedGeometryEffect(id: "artist", in: playerAnimation)
         }
         .frame(width: 230)
         .compositingGroup()
@@ -198,4 +183,5 @@ struct PlayerView: View {
  
 #Preview {
     PlayerView()
+//        .preferredColorScheme(.dark)
 }

@@ -14,17 +14,14 @@ struct ImportFileManager: UIViewControllerRepresentable {
     
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         let docPicker =  UIDocumentPickerViewController(forOpeningContentTypes: [.audio])
-        
         docPicker.allowsMultipleSelection = false //select only one file
+//        docPicker.allowsMultipleSelection = true //select only more file
         docPicker.shouldShowFileExtensions = true //see file extension
         docPicker.delegate = context.coordinator
-        
         return docPicker
     }
     
-    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {
-        
-    }
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) { }
     
     func makeCoordinator() -> Coordinator {
         return Coordinator(parent: self)
@@ -73,7 +70,6 @@ struct ImportFileManager: UIViewControllerRepresentable {
                 } else {
                     print("Error: \(#function) Song with the some name is already exists")
                 }
-                
             } catch {
                 print("Error: \(#function) - \(error.localizedDescription)")
             }
