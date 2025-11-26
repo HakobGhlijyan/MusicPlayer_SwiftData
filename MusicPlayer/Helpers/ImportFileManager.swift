@@ -3,6 +3,7 @@
 //  MusicPlayer
 //
 //  Created by Hakob Ghlijyan on 11/21/25.
+//  SwiftData + ExternalStorage Example
 //
 
 import SwiftUI
@@ -102,77 +103,76 @@ struct ImportFileManager: UIViewControllerRepresentable {
             guard url.startAccessingSecurityScopedResource() else { return }
             defer { url.stopAccessingSecurityScopedResource() }
 
-            do {
-                /// Load the audio file into memory
-                /// — Загружаем аудиофайл в память
-                let data = try Data(contentsOf: url)
+            DispatchQueue.global(qos: .userInitiated).async {
+                do {
+                    /// Load the audio file into memory
+                    /// — Загружаем аудиофайл в память
+                    let data = try Data(contentsOf: url)
 
-                /// Create an AVAsset to extract metadata such as title and artist
-                /// — Создаём `AVAsset` для извлечения метаданных (название, артист)
-                let asset = AVAsset(url: url)
+                    /// Create an AVAsset to extract metadata such as title and artist
+                    /// — Создаём `AVAsset` для извлечения метаданных (название, артист)
+                    let asset = AVAsset(url: url)
 
-                /// Initialize a Song model with fallback name
-                /// — Инициализируем модель Song с именем по умолчанию
-                let song = Song(name: url.lastPathComponent, data: data)
+                    /// Initialize a Song model with fallback name
+                    /// — Инициализируем модель Song с именем по умолчанию
+                    let song = Song(name: url.lastPathComponent, data: data)
 
-                /// Iterate through metadata items and assign supported values
-                /// — Перебираем метаданные и сохраняем поддерживаемые значения
-                for item in asset.metadata {
-                    guard
-                        let key = item.commonKey?.rawValue,
-                        let value = item.value
-                    else { continue }
+                    /// Iterate through metadata items and assign supported values
+                    /// — Перебираем метаданные и сохраняем поддерживаемые значения
+                    for item in asset.metadata {
+                        guard
+                            let key = item.commonKey?.rawValue,
+                            let value = item.value
+                        else { continue }
 
-                    switch key {
-                    case AVMetadataKey.commonKeyTitle.rawValue:
-                        /// Set song title if available
-                        /// — Устанавливаем название песни, если найдено
-                        song.name = value as? String ?? "unknown"
+                        switch key {
+                        case AVMetadataKey.commonKeyTitle.rawValue:
+                            /// Set song title if available
+                            /// — Устанавливаем название песни, если найдено
+                            song.name = value as? String ?? "unknown"
 
-                    case AVMetadataKey.commonKeyArtist.rawValue:
-                        /// Set artist name
-                        /// — Устанавливаем имя исполнителя
-                        song.artist = value as? String
+                        case AVMetadataKey.commonKeyArtist.rawValue:
+                            /// Set artist name
+                            /// — Устанавливаем имя исполнителя
+                            song.artist = value as? String
 
-                    case AVMetadataKey.commonKeyArtwork.rawValue:
-                        /// Set cover image data
-                        /// — Устанавливаем обложку трека (если есть)
-                        song.coverImage = value as? Data
+                        case AVMetadataKey.commonKeyArtwork.rawValue:
+                            /// Set cover image data
+                            /// — Устанавливаем обложку трека (если есть)
+                            song.coverImage = value as? Data
 
-                    default:
-                        break
-                    }
-                }
-
-                /// Convert duration to seconds
-                /// — Конвертируем длительность трека в секунды
-                song.duration = CMTimeGetSeconds(asset.duration)
-
-                /// Avoid adding duplicate entries by name - Realm DB
-                /// — Предотвращаем добавление дубликатов по имени
-
-                DispatchQueue.main.async {
-                    // ✅ duplicate check for SwiftData
-                    if let existing = try? self.modelContext.fetch(
-                        FetchDescriptor<Song>()
-                    ), existing.contains(where: {
-                        $0.name == song.name &&
-                        ($0.artist ?? "") == (song.artist ?? "")
-                    }) {
-                        print("⚠️ Duplicate skipped: \(song.name)")
-                        return
+                        default:
+                            break
+                        }
                     }
 
-                    /// Update the UI on the main thread
-                    /// — Обновляем UI на главном потоке
-                    self.modelContext.insert(song)
-                    print("✅ Saved: \(song.name)")
-                }
+                    /// Convert duration to seconds
+                    /// — Конвертируем длительность трека в секунды
+                    song.duration = CMTimeGetSeconds(asset.duration)
 
-            } catch {
-                /// Handle loading failure
-                /// — Обработка ошибок загрузки файла
-                print("❌ Failed to load file: \(error.localizedDescription)")
+                    DispatchQueue.main.async {
+                        // ✅ duplicate check for SwiftData
+                        if let existing = try? self.modelContext.fetch(
+                            FetchDescriptor<Song>()
+                        ), existing.contains(where: {
+                            $0.name == song.name &&
+                            ($0.artist ?? "") == (song.artist ?? "")
+                        }) {
+                            print("⚠️ Duplicate skipped: \(song.name)")
+                            return
+                        }
+
+                        /// Update the UI on the main thread
+                        /// — Обновляем UI на главном потоке
+                        self.modelContext.insert(song)
+                        print("✅ Saved with externalStorage: \(song.name)")
+                    }
+
+                } catch {
+                    /// Handle loading failure
+                    /// — Обработка ошибок загрузки файла
+                    print("❌ Failed to load file: \(error.localizedDescription)")
+                }
             }
         }
     }
