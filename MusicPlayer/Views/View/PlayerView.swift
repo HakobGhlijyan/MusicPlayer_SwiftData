@@ -104,6 +104,7 @@ struct PlayerView: View {
 //                }
 //            }
         }
+        .scrollIndicators(.hidden)
         .listStyle(.plain)
     }
     

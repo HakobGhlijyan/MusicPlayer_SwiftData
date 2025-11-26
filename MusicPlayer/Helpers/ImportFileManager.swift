@@ -92,12 +92,148 @@ struct ImportFileManager: UIViewControllerRepresentable {
             }
         }
 
-        /// Processes a selected file URL by reading its data, extracting metadata,
-        /// and appending the resulting `Song` to the parent binding.
-        /// — Обрабатывает выбранный файл: читает данные, извлекает метаданные
-        /// и добавляет полученную `Song` в список родителя.
+        /// Imports a selected audio file, extracts metadata asynchronously,
+        /// and saves it into SwiftData avoiding duplicates.
+        ///
+        /// — Импортирует выбранный аудиофайл, асинхронно извлекает метаданные
+        /// и сохраняет в SwiftData, предотвращая дубликаты.
         private func process(url: URL) {
 
+            /// Begin secure access for sandbox-protected external file URLs.
+            /// — Начинаем безопасный доступ к файлу вне sandbox.
+            guard url.startAccessingSecurityScopedResource() else { return }
+
+            /// Always release access when function completes.
+            /// — Гарантированно освобождаем доступ при выходе из функции.
+            defer { url.stopAccessingSecurityScopedResource() }
+
+            /// Perform heavy work off the main thread using Swift Concurrency.
+            /// — Выполняем тяжёлую работу вне главного потока с помощью Swift Concurrency.
+            Task.detached { [weak self] in
+
+                /// Prevent work if coordinator was deallocated.
+                /// — Прекращаем выполнение, если объект был освобождён.
+                guard let self else { return }
+
+                do {
+                    // MARK: - 1) Load File + Metadata (Background)
+
+                    /// Read the audio file into memory.
+                    /// Can throw if the URL is invalid or unreadable.
+                    /// — Читаем аудиофайл в память.
+                    /// Может вызвать ошибку, если URL недействителен.
+                    let data = try Data(contentsOf: url)
+
+                    /// Create AVAsset for loading metadata such as title, artist and duration.
+                    /// — Создаём AVAsset для получения метаданных: название, артист, длительность.
+                    let asset = AVAsset(url: url)
+
+                    /// Load duration using modern async API (iOS 16+).
+                    /// Replaces deprecated synchronous `.duration`.
+                    /// — Загружаем длительность через современный async API (iOS 16+).
+                    /// Заменяет устаревший синхронный `.duration`.
+                    let duration = try await asset.load(.duration)
+
+                    /// Convert CMTime to seconds.
+                    /// — Переводим CMTime в секунды.
+                    let seconds = CMTimeGetSeconds(duration)
+
+                    /// Load metadata asynchronously (replaces deprecated `.metadata`).
+                    /// — Асинхронно загружаем метаданные (вместо устаревшего `.metadata`).
+                    let metadata = try await asset.load(.metadata)
+
+                    /// Default values extracted before parsing metadata.
+                    /// — Значения по умолчанию до обработки метаданных.
+                    var title = url.lastPathComponent
+                    var artist: String?
+                    var artwork: Data?
+
+                    /// Iterate through metadata items and extract only supported ones.
+                    /// — Перебираем все элементы метаданных и получаем только нужные.
+                    for item in metadata {
+                        switch item.commonKey?.rawValue {
+
+                        case AVMetadataKey.commonKeyTitle.rawValue:
+                            /// Attempt to load track title.
+                            /// — Пытаемся загрузить название трека.
+                            title = (try? await item.load(.value) as? String) ?? title
+
+                        case AVMetadataKey.commonKeyArtist.rawValue:
+                            /// Attempt to load artist name.
+                            /// — Пытаемся загрузить имя исполнителя.
+                            artist = try? await item.load(.value) as? String
+
+                        case AVMetadataKey.commonKeyArtwork.rawValue:
+                            /// Attempt to load album artwork image.
+                            /// — Пытаемся загрузить обложку альбома.
+                            artwork = try? await item.load(.value) as? Data
+
+                        default:
+                            /// Ignore unsupported metadata types.
+                            /// — Пропускаем неподдерживаемые типы метаданных.
+                            break
+                        }
+                    }
+
+                    /// Store extracted metadata in a lightweight struct.
+                    /// — Сохраняем извлечённые данные во временную структуру.
+                    let info = ImportedSongInfo(
+                        name: title,
+                        artist: artist,
+                        cover: artwork,
+                        duration: seconds,
+                        data: data
+                    )
+
+
+                    // MARK: - 2) Save to SwiftData (MainActor)
+
+                    /// Switch to main thread for SwiftData operations.
+                    /// — Переключаемся на главный поток для операций SwiftData.
+                    await MainActor.run {
+
+                        /// Fetch existing songs to compare against duplicates.
+                        /// — Получаем существующие записи для проверки дубликатов.
+                        let existing = try? self.modelContext.fetch(FetchDescriptor<Song>())
+
+                        /// Skip if song already exists by name + artist.
+                        /// — Пропускаем, если такая песня уже есть (name + artist).
+                        if existing?.contains(where: {
+                            $0.name == info.name &&
+                            ($0.artist ?? "") == (info.artist ?? "")
+                        }) == true {
+                            print("⚠️ Duplicate skipped: \(info.name)")
+                            return
+                        }
+
+                        /// Create a new Song only on the main thread.
+                        /// — Создаём Song только на главном потоке.
+                        let song = Song(
+                            name: info.name,
+                            data: info.data,
+                            artist: info.artist,
+                            coverImage: info.cover,
+                            duration: info.duration
+                        )
+
+                        /// Insert into SwiftData storage.
+                        /// — Вставляем в базу SwiftData.
+                        self.modelContext.insert(song)
+
+                        /// Log success for debugging purposes.
+                        /// — Логируем успешное сохранение для отладки.
+                        print("✅ Saved: \(song.name)")
+                    }
+
+                } catch {
+                    /// Handle any thrown errors gracefully.
+                    /// — Корректно обрабатываем любые возникшие ошибки.
+                    print("❌ Import failed: \(error.localizedDescription)")
+                }
+            }
+        }
+        /*
+        private func process(url: URL) {
             /// Begin accessing a security-scoped resource (required in sandbox)
             /// — Начинаем доступ к защищённому ресурсу (обязательно в sandbox)
             guard url.startAccessingSecurityScopedResource() else { return }
@@ -175,5 +311,14 @@ struct ImportFileManager: UIViewControllerRepresentable {
                 }
             }
         }
+         */
     }
+}
+
+fileprivate struct ImportedSongInfo {
+    let name: String
+    let artist: String?
+    let cover: Data?
+    let duration: Double
+    let data: Data
 }
