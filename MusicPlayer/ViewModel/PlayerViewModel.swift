@@ -8,9 +8,10 @@
 import SwiftUI
 import Combine
 import AVKit
+import RealmSwift
 
 final class PlayerViewModel: NSObject, ObservableObject {
-    @Published var songs: [Song] = []
+    @ObservedResults(Song.self) var songsDB
     @Published var audioPlayer: AVAudioPlayer?
     @Published var isPlaying: Bool = false
     @Published var currentIndex: Int?
@@ -19,10 +20,10 @@ final class PlayerViewModel: NSObject, ObservableObject {
     @Published var totalTime: TimeInterval = 0.0
     
     var currentSong: Song? {
-        guard let currentIndex = currentIndex, songs.indices.contains(currentIndex) else {
+        guard let currentIndex = currentIndex, songsDB.indices.contains(currentIndex) else {
             return nil
         }
-        return songs[currentIndex]
+        return songsDB[currentIndex]
     }
     
     //Converter
@@ -51,7 +52,7 @@ extension PlayerViewModel {
             isPlaying = true
             totalTime = audioPlayer?.duration ?? 0.0
             
-            if let index = songs.firstIndex(where: { $0.id == song.id }) {
+            if let index = songsDB.firstIndex(where: { $0.id == song.id }) {
                 currentIndex = index
             }
         } catch {
@@ -76,14 +77,14 @@ extension PlayerViewModel {
     
     func forward() {
         guard let currentIndex = currentIndex else { return }
-        let nextIndex = (currentIndex + 1 < songs.count) ? currentIndex + 1 : 0
-        playAudio(song: songs[nextIndex])
+        let nextIndex = (currentIndex + 1 < songsDB.count) ? currentIndex + 1 : 0
+        playAudio(song: songsDB[nextIndex])
     }
     
     func backward() {
         guard let currentIndex = currentIndex else { return }
-        let backIndex = currentIndex > 0 ? currentIndex - 1 : songs.count - 1
-        playAudio(song: songs[backIndex])
+        let backIndex = currentIndex > 0 ? currentIndex - 1 : songsDB.count - 1
+        playAudio(song: songsDB[backIndex])
     }
     
     func seekTime(time: TimeInterval) {
@@ -93,12 +94,5 @@ extension PlayerViewModel {
     func updateProgress() {
         guard let audioPlayer = audioPlayer else { return }
         currentTime = audioPlayer.currentTime
-    }
-    
-    func delete(offsets: IndexSet) {
-        if let first = offsets.first {
-            stop()
-            songs.remove(at: first)
-        }
     }
 }

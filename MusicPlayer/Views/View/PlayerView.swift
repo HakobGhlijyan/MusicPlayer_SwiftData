@@ -6,9 +6,11 @@
 //
 
 import SwiftUI
+import RealmSwift
 
 struct PlayerView: View {
     @StateObject private var viewModel = PlayerViewModel()
+    @ObservedResults(Song.self) var songsDB
     @State private var showFileManager: Bool = false
     @State private var showFullPlayer: Bool = false
     @Namespace private var playerAnimation
@@ -36,9 +38,9 @@ struct PlayerView: View {
         }
         .sheet(isPresented: $showFileManager) {
             // выбрать одну
-            ImportFileManager(songs: $viewModel.songs, singleSelection: true)
+//            ImportFileManager(singleSelection: true)
             // выбрать много
-//            ImportFileManager(songs: $viewModel.songs, singleSelection: false)
+            ImportFileManager(singleSelection: false)
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -70,13 +72,13 @@ struct PlayerView: View {
     
     @ViewBuilder private func MusicListView() -> some View {
         List {
-            ForEach(viewModel.songs) { song in
+            ForEach(songsDB) { song in
                 SongRow(song: song, durationFormatted: viewModel.durationFormatted)
                     .onTapGesture {
                         viewModel.playAudio(song: song)
                     }
             }
-            .onDelete(perform: viewModel.delete)
+            .onDelete(perform: $songsDB.remove(atOffsets:))
         }
         .listStyle(.plain)
     }
