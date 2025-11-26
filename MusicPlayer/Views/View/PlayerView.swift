@@ -6,11 +6,13 @@
 //
 
 import SwiftUI
-import RealmSwift
+import SwiftData
 
 struct PlayerView: View {
+    @Environment(\.modelContext) private var context
+    @Query(sort: \Song.name) private var songsDB: [Song]
+
     @StateObject private var viewModel = PlayerViewModel()
-    @ObservedResults(Song.self) var songsDB
     @State private var showFileManager: Bool = false
     @State private var showFullPlayer: Bool = false
     @Namespace private var playerAnimation
@@ -61,6 +63,12 @@ struct PlayerView: View {
             }
         }
         .embedNavigation()
+        .onAppear {
+            viewModel.updateSongs(songsDB)
+        }
+        .onChange(of: songsDB) { _, newSongs in
+            viewModel.updateSongs(newSongs)
+        }
     }
         
     @ViewBuilder private func MusicPlayerView() -> some View {
@@ -78,7 +86,23 @@ struct PlayerView: View {
                         viewModel.playAudio(song: song)
                     }
             }
-            .onDelete(perform: $songsDB.remove(atOffsets:))
+            .onDelete { indexSet in
+                let songsToDelete = indexSet.map { songsDB[$0] }
+                viewModel.deleteSongs(songsToDelete, context: context)
+            }
+            //or
+//            .onDelete { indexSet in
+//                for i in indexSet {
+//                    let songToDelete = songsDB[i]
+//
+//                    // Проверяем, играется ли эта песня
+//                    if viewModel.currentSong?.id == songToDelete.id {
+//                        viewModel.stop()
+//                    }
+//
+//                    context.delete(songToDelete)
+//                }
+//            }
         }
         .listStyle(.plain)
     }

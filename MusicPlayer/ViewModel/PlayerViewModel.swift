@@ -6,12 +6,12 @@
 //
 
 import SwiftUI
+import SwiftData
 import Combine
 import AVKit
-import RealmSwift
 
 final class PlayerViewModel: NSObject, ObservableObject {
-    @ObservedResults(Song.self) var songsDB
+    private var songsDB: [Song] = []
     @Published var audioPlayer: AVAudioPlayer?
     @Published var isPlaying: Bool = false
     @Published var currentIndex: Int?
@@ -25,7 +25,11 @@ final class PlayerViewModel: NSObject, ObservableObject {
         }
         return songsDB[currentIndex]
     }
-    
+        
+    func updateSongs(_ newSongs: [Song]) {
+        self.songsDB = newSongs
+    }
+
     //Converter
     func durationFormatted(duration: TimeInterval) -> String {
         let formatter = DateComponentsFormatter()
@@ -72,6 +76,7 @@ extension PlayerViewModel {
     func stop() {
         self.audioPlayer?.stop()
         self.audioPlayer = nil
+        currentIndex = nil
         isPlaying = false
     }
     
@@ -94,5 +99,14 @@ extension PlayerViewModel {
     func updateProgress() {
         guard let audioPlayer = audioPlayer else { return }
         currentTime = audioPlayer.currentTime
+    }
+    
+    func deleteSongs(_ songsToDelete: [Song], context: ModelContext) {
+        for song in songsToDelete {
+            if currentSong?.id == song.id {
+                stop()
+            }
+            context.delete(song)
+        }
     }
 }

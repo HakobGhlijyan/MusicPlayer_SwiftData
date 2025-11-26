@@ -6,15 +6,16 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
-struct MusicPlayerApp: App {    
+struct MusicPlayerApp: App {
     var body: some Scene {
-        
         WindowGroup {
             let _ = print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.path)   // iOS <16
-//            let _ = print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.path()) // iOS >16
-            RootView()
+
+            PlayerView()
         }
+        .modelContainer(for: Song.self)
     }
 }
