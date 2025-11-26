@@ -16,12 +16,11 @@
 
 ## 🔹 Скриншоты
 
-*Добавьте сюда свои скриншоты приложения*  
-
-![Mini Player](screenshots/mini_player.png)  
-![Full Player](screenshots/full_player.png)  
-![Import](screenshots/import.png)  
-
+<div style="display:flex; gap:10px; flex-wrap: wrap;">
+  <img src="screenshots/mini_player.png" width="400" alt="Mini Player"/>
+  <img src="screenshots/full_player.png" width="400" alt="Full Player"/>
+  <img src="screenshots/import.png" width="400" alt="Import"/>
+</div>
 ---
 
 ## 🔹 Возможности
@@ -86,3 +85,13 @@
 ## 🔹 Лицензия
 
 MIT License © Hakob Ghlijyan
+
+
+
+
+
+
+
+![Mini Player](screenshots/mini_player.png)  
+![Full Player](screenshots/full_player.png)  
+![Import](screenshots/import.png)  
